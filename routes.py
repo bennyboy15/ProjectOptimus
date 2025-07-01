@@ -6,7 +6,7 @@ import os
 from flask import flash, jsonify, make_response, redirect, render_template, request, url_for
 from sqlalchemy import desc
 from forms import LoginForm, RegisterForm
-from models import User, Customer, Part, Order, OrderItem, ReturnItem, Return
+from models import User
 from flask_bcrypt import Bcrypt
 from flask_login import login_manager, login_required, login_user, logout_user, current_user
 from datetime import datetime, timedelta
@@ -60,7 +60,7 @@ def register_routes(app, db):
                 flash("Invalid username or password", "danger")
         else:
             print(form.errors)
-        return render_template('login.html', form=form)
+        return render_template('auth/login.html', form=form)
 
     @app.route('/logout')
     def logout():
@@ -91,5 +91,5 @@ def register_routes(app, db):
                 flash("Error when registering", "danger")
                 return redirect(url_for("register"))
             
-        return render_template('register.html', form=form)
+        return render_template('auth/register.html', form=form)
     
