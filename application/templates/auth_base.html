@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    };
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+</head>
+
+<body class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 dark:text-white">
+
+  <canvas id="backgroundCanvas" class="z-0 fixed"></canvas>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <ul class="flashes">
+    {% for category, message in messages %}
+    <div class="{{ category }} flash-message flex justify-between items-center p-4 mb-4 text-sm rounded-lg bg-white/10 backdrop-blur-sm" role="alert">
+      <div class="flex items-center justify-start">
+        <svg class="shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+        fill="currentColor" viewBox="0 0 20 20">
+          <path
+            d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z" />
+        </svg>
+        <span class="sr-only">Info</span>
+        <div>
+          <span class="font-medium">{{ message }}</span>
+        </div>
+      </div>
+      <div>
+        <svg class="close-flash p-1 hover:bg-gray-200 rounded hover:cursor-pointer" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 6L18 18" stroke="black" stroke-width="2" stroke-linecap="round"/>
+          <path d="M6 18L18 6" stroke="black" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% endwith %}
+
+  <!-- AUTH CONTAINER -->
+  <div
+    class="flex bg-white/10 backdrop-blur-sm w-full max-w-md flex-col justify-center px-6 py-12 rounded-md shadow bg-white">
+    <div class="sm:mx-auto sm:w-full sm:max-w-sm">
+      <img class="mx-auto h-10 w-auto"
+        src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=indigo&shade=600" alt="Your Company" />
+      <h2 class="mt-10 text-center text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 ">
+        {% block heading %}{% endblock %}
+      </h2>
+      <!-- Dark Mode Toggle -->
+      <button id="darkModeToggle"
+              class="absolute top-10 right-10 z-50 p-2 rounded-full bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-800 transition">
+        <p class="hidden dark:block text-white">🌙</p>
+        <p class="block dark:hidden">☀️</p>
+      </button>
+    </div>
+
+    <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+      <form class="space-y-6" action="{% block formAction %}{% endblock %}" method="POST">
+        {{ form.hidden_tag() }}
+
+        <div>
+          {{ form.username.label(class="block text-sm font-medium
+          text-gray-900 dark:text-gray-100") }}
+          <div class="mt-2">
+            {{ form.username(class="block w-full rounded-md bg-white px-3
+            py-1.5 text-base text-gray-900 outline outline-1 outline-gray-300
+            placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-600
+            sm:text-sm", value=request.cookies.get('remembered_username', ''))}}
+          </div>
+        </div>
+
+        <div>
+          {{ form.password.label(class="block text-sm font-medium
+          text-gray-900 dark:text-gray-100 ") }}
+          <div class="mt-2">
+            {{ form.password(class="block w-full rounded-md bg-white px-3
+            py-1.5 text-base text-gray-900 outline outline-1 outline-gray-300
+            placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-600
+            sm:text-sm") }}
+          </div>
+        </div>
+
+        <div>
+          {{ form.submit(class="flex w-full justify-center rounded-md
+          bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm
+          hover:bg-indigo-500 focus-visible:outline-2
+          focus-visible:outline-offset-2 focus-visible:outline-indigo-600") }}
+        </div>
+      </form>
+
+      <p class="mt-10 text-center text-sm text-gray-500">
+        {% block link %}{% endblock %}
+      </p>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/animated_background.js') }}"></script>
+  <!--<script src="../static/js/animated_background.js"></script>-->
+  <script>
+    document.querySelectorAll('.close-flash').forEach(button => {
+      button.addEventListener('click', () => {
+        const flash = button.closest('.flash-message');
+        if (flash) flash.remove();
+      });
+    });
+  </script>
+
+  <script>
+    // 1. Apply saved theme on page load
+    if (localStorage.getItem("theme") === "dark") {
+      document.documentElement.classList.add("dark");
+    }
+
+    // 2. Toggle and persist theme
+    const toggleBtn = document.getElementById("darkModeToggle");
+    toggleBtn.addEventListener("click", () => {
+      document.documentElement.classList.toggle("dark");
+
+      // Save the current theme
+      if (document.documentElement.classList.contains("dark")) {
+        localStorage.setItem("theme", "dark");
+      } else {
+        localStorage.setItem("theme", "light");
+      }
+    });
+  </script>
+</body>
+
+</html>

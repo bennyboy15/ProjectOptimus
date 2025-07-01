@@ -1,0 +1,21 @@
+{% extends 'auth_base.html' %}
+
+{% block title %}
+Login
+{% endblock %}
+
+{% block heading %}
+Sign in to your account.
+{% endblock %}
+
+{% block formAction %}
+{{ url_for('login') }}
+{% endblock %}
+
+{% block btn %}
+Sign In
+{% endblock %}
+
+{% block link %}
+<span class="dark:text-gray-300 mr-1">Don't have an account?</span><a href="{{ url_for('register') }}" class="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-300 ">Register here</a>
+{% endblock %}
