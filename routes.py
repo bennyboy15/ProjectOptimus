@@ -4,13 +4,13 @@ from functools import wraps
 import io
 import os
 from flask import flash, jsonify, make_response, redirect, render_template, request, url_for
+import requests
 from sqlalchemy import desc
 from forms import LoginForm, RegisterForm
 from models import User
 from flask_bcrypt import Bcrypt
 from flask_login import login_manager, login_required, login_user, logout_user, current_user
 from datetime import datetime, timedelta
-
 
 bcrypt = Bcrypt()
 
@@ -21,7 +21,7 @@ def register_routes(app, db):
         return User.query.get(int(user_id))
     
     @app.route("/")
-    def home():
+    def index():
         return redirect(url_for("login"))
     
     def role_required(*roles):
@@ -49,7 +49,7 @@ def register_routes(app, db):
                 login_user(user)
                 # Redirect based on role
                 if user.role == "admin":
-                    response = make_response(redirect(url_for("dashboard")))
+                    response = make_response(redirect(url_for("worksheets")))
                 elif user.role == "staff":
                     response = make_response(redirect(url_for("orders")))
                 else:
@@ -93,3 +93,32 @@ def register_routes(app, db):
             
         return render_template('auth/register.html', form=form)
     
+    @app.route("/home")
+    def home():
+        API_KEY = os.environ.get('WEATHER_API_KEY')
+        city = "Adelaide"
+        url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
+
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            data = response.json()
+            temperature = data["main"]["temp"]
+            description = data["weather"][0]["description"]
+            weather = f"{city} ({temperature}°C, {description})"
+        else:
+            print("Error fetching weather:", response.status_code)
+        return render_template("home/home.html", weather=weather)
+    
+    @app.route("/worksheets")
+    def worksheets():
+        return render_template("worksheets/worksheets_view.html")
+    
+    @app.route("/update_user/<int:uid>")
+    def update_user(uid):
+        user = User.query.get_or_404(uid)
+        user.role = "admin"
+        user.first_name = "Benjamin"
+        user.last_name = "Harvey"  
+        db.session.commit()
+        return redirect(url_for('login'))
