@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Quote #{{ quote.id }}</title>
+</head>
+
+<body>
+    <h1>Quote for {{ quote.customer_name }}</h1>
+    <p><strong>Date:</strong> {{ quote.date_created.strftime('%Y-%m-%d') }}</p>
+    <p><strong>Truck:</strong> {{ truck_model.make.name }} {{ truck_model.name }}</p>
+
+    <hr>
+    <h2>Selected Options:</h2>
+    <ul>
+        {% for sel in quote.selections %}
+        <li>
+            <strong>{{ sel.option.heading.section.name }} > {{ sel.option.heading.name }}:</strong>
+            {{ sel.option.name }}
+            <ul>
+                {% for attr_val in sel.selected_attributes %}
+                <li>{{ attr_val.attribute.name }}: {{ attr_val.value.value }}</li>
+                {% endfor %}
+            </ul>
+            {% if sel.notes %}
+            <em>Notes: {{ sel.notes }}</em>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+
+    <hr>
+    <h2>All Available Options for this Truck Model:</h2>
+    {% for section, headings in data.items() %}
+    <h3>{{ section }}</h3>
+    {% for heading, options in headings.items() %}
+    <strong>{{ heading }}</strong>
+    <ul>
+        {% for option in options %}
+        <li>
+            {{ option.name }}
+            <ul>
+                {% for attr in option.attributes %}
+                <li>{{ attr.name }}:
+                    {% for val in attr.values %}
+                    {{ val.value }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                </li>
+                {% endfor %}
+            </ul>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endfor %}
+    {% endfor %}
+</body>
+
+</html>
