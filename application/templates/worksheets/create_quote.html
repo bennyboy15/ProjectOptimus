@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block main %}
+<!--
+<div class="flex flex-col justify-between bg-[#f0f8ff] p-4 border-2 border-blue-200 shadow rounded">
+    <h1>Create New Quote</h1>
+
+    <form method="POST">
+        <label>Customer:</label>
+        <select name="customer_id" required>
+            {% for customer in customers %}
+                <option value="{{ customer.id }}">{{ customer.name }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label>Salesman:</label>
+        <select name="salesman_id" required>
+            {% for s in salesmen %}
+                <option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        {% for section in sections %}
+        <div class="rounded bg-gray-200 p-4">
+            <h2>{{ section.name }}</h2>
+            {% for heading in section.headings %}
+                <div class="p-2 rounded border flex flex-col">
+                    <label><strong>{{ heading.name }}</strong></label><br>
+                    <select name="heading_{{ heading.id }}">
+                        <option value="">-- Select an option --</option>
+                        {% for option in heading.options %}
+                            <option value="{{ option.id }}">{{ option.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <br>
+                    <small>Note (optional):</small>
+                    <input type="text" name="note_{{ heading.id }}">
+                </div>
+            </div>
+            {% endfor %}
+        {% endfor %}
+
+        <button type="submit">Create Quote</button>
+    </form>
+</div>
+-->
+
+<!-- Nav back btn -->
+<a href="{{ url_for('home') }}">
+    <button class="mb-6 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">
+        ← Back
+    </button>
+</a>
+
+<div class="bg-[#f0f8ff] p-4 border-2 border-blue-200 shadow rounded">
+    <h1>Create New Quote</h1>
+    <form method="POST">
+        <!-- ADMIN -->
+        <div class="flex gap-5 p-2 rounded border bg-gray-800 my-2 text-gray-800">
+            <label>
+                Customer
+                <select name="customer_id" class="px-2 py-1 rounded border" required>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}">{{ customer.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Salesman:
+                <select name="salesman_id" class="px-2 py-1 rounded border" required>
+                    {% for s in salesmen %}
+                    <option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+        <!-- SECTIONS -->
+        <div class="flex flex-col gap-4">
+            {% for section in sections %}
+            <div class="p-4 bg-gray-700 rounded-lg hover:bg-gray-600"
+                onclick="toggleSection(event, 'section_{{section.id}}')">
+                <h2 onclick="toggleSection(event, 'section_{{section.id}}')" class="text-xl font-semibold text-white">{{
+                    section.name }}</h2>
+
+                <div id="section_{{section.id}}">
+                    {% for heading in section.headings %}
+                    <div class="p-4 bg-white shadow-md rounded-lg mt-2">
+                        <label class="block font-medium mb-1">{{ heading.name }}</label>
+
+                        <!-- OPTION SELECT -->
+                        <select name="heading_{{ heading.id }}" class="border p-2 rounded w-full option-select"
+                            data-heading="{{ heading.id }}">
+                            <option value="">-- Select an option --</option>
+                            {% for option in heading.options %}
+                            <option value="{{ option.id }}">{{ option.name }}</option>
+                            {% endfor %}
+                            <option value="N/A">N/A</option>
+                        </select>
+
+                        <!-- ATTRIBUTE GROUPS PER OPTION -->
+                        {% for option in heading.options %}
+                        {% if option.attributes %}
+                        <div class="mt-2 pl-4" data-option="{{ option.id }}" data-heading="{{ heading.id }}">
+                            {% for attr in option.attributes %}
+                            <label class="block mt-2">{{ attr.name }}</label>
+                            <select name="attr_{{ heading.id }}_{{ attr.id }}" class="border p-2 rounded w-full">
+                                <option value="">-- Choose a value --</option>
+                                {% for val in attr.values %}
+                                <option value="{{ val.id }}">{{ val.value }}</option>
+                                {% endfor %}
+                            </select>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold mt-5">Submit</button>
+    </form>
+</div>
+
+<script>
+    function toggleSection(event, section) {
+        if (event.target === event.currentTarget) {
+            document.getElementById(section).classList.toggle("hidden");
+        }
+    }
+</script>
+{% endblock %}

@@ -7,7 +7,7 @@ from flask import flash, jsonify, make_response, redirect, render_template, requ
 import requests
 from sqlalchemy import desc
 from forms import LoginForm, RegisterForm
-from models import Heading, Option, OptionAttribute, OptionAttributeValue, Quote, QuoteOptionAttributeValue, QuoteOptionSelection, Section, TruckMake, TruckModel, TruckModelOption, User
+from models import Customer, Heading, Option, OptionAttribute, OptionAttributeValue, Quote, QuoteOptionAttributeValue, QuoteOptionSelection, Salesman, Section, TruckMake, TruckModel, TruckModelOption, User
 from flask_bcrypt import Bcrypt
 from flask_login import login_manager, login_required, login_user, logout_user, current_user
 from datetime import datetime, timedelta
@@ -118,6 +118,8 @@ def register_routes(app, db):
                 truck_model = model_option.truck_model
                 break
 
+        truck_model = TruckModel.query.get(1)
+
         # Load all sections, headings, and options for that model
         all_data = {}
         for model_option in truck_model.available_options:
@@ -140,9 +142,42 @@ def register_routes(app, db):
             data=all_data
         )
     
-    @app.route("/new_worksheet")
-    def new_worksheet():
-        return render_template('worksheets/new_worksheet.html')
+    @app.route("/quotes/new", methods=["GET", "POST"])
+    def create_quote():
+        if request.method == "POST":
+            customer_id = request.form.get("customer_id")
+            salesman_id = request.form.get("salesman_id")
+
+            # Create the quote
+            quote = Quote(customer_id=customer_id, salesman_id=salesman_id)
+            db.session.add(quote)
+            db.session.flush()
+
+            # For each heading, check if a selected option exists
+            for key in request.form:
+                if key.startswith("heading_"):
+                    heading_id = int(key.split("_")[1])
+                    option_id = int(request.form[key])
+                    note = request.form.get(f"note_{heading_id}", "")
+
+                    selection = QuoteOptionSelection(
+                        quote_id=quote.id,
+                        option_id=option_id,
+                        notes=note
+                    )
+                    db.session.add(selection)
+                    db.session.flush()
+
+                    # Add attribute values if desired (optional enhancement)
+
+            db.session.commit()
+            return redirect(url_for("view_quotes"))
+
+        customers = Customer.query.all()
+        salesmen = Salesman.query.all()
+        sections = Section.query.all()  # Load sections → headings → options
+        return render_template("worksheets/create_quote.html", customers=customers, salesmen=salesmen, sections=sections)
+
     
     # -- OTHER --
     @app.route("/update_user/<int:uid>")
@@ -168,57 +203,63 @@ def register_routes(app, db):
     
     @app.route('/section')
     def add_section():
+        sections = Section.query.all()
+        for sec in sections:
+            db.session.delete(sec)
         db.session.add_all([Section(name="Predelivery"),Section(name="Stainless"),Section(name="Hydraulics")])
         db.session.commit()
         return "SECTION DONE"
     
     @app.route('/heading')
     def add_heading():
+        headings = Heading.query.all()
+        for head in headings:
+            db.session.delete(head)
         db.session.add_all([
-            Heading(section_id=2, name="FREIGHT"),
-            Heading(section_id=2, name="PRE-DELIVERY"),
-            Heading(section_id=2, name="ENGINE UP RATE"),
-            Heading(section_id=2, name="FIRE EXT"),
-            Heading(section_id=2, name="NUTCOVERS"),
-            Heading(section_id=2, name="HUB CAPS"),
-            Heading(section_id=2, name="SEAT COVERS"),
-            Heading(section_id=2, name="DASH MAT"),
-            Heading(section_id=2, name="FLOOR MATS"),
-            Heading(section_id=2, name="SAFETY TRIANGLE/JACK"),
-            Heading(section_id=2, name="MATTRESS PROTECTOR"),
-            Heading(section_id=2, name="1ST AID KIT"),
-            Heading(section_id=2, name="WEATHER SHIELD"),
-            Heading(section_id=2, name="CHROME ADBLUE"),
-            Heading(section_id=2, name="WHEEL ALIGNMENT"),
-            Heading(section_id=2, name="WINDOW TINT"),
-            Heading(section_id=2, name="DETAILING")
+            Heading(section_id=1, name="FREIGHT"),
+            Heading(section_id=1, name="PRE-DELIVERY"),
+            Heading(section_id=1, name="ENGINE UP RATE"),
+            Heading(section_id=1, name="FIRE EXT"),
+            Heading(section_id=1, name="NUTCOVERS"),
+            Heading(section_id=1, name="HUB CAPS"),
+            Heading(section_id=1, name="SEAT COVERS"),
+            Heading(section_id=1, name="DASH MAT"),
+            Heading(section_id=1, name="FLOOR MATS"),
+            Heading(section_id=1, name="SAFETY TRIANGLE/JACK"),
+            Heading(section_id=1, name="MATTRESS PROTECTOR"),
+            Heading(section_id=1, name="1ST AID KIT"),
+            Heading(section_id=1, name="WEATHER SHIELD"),
+            Heading(section_id=1, name="CHROME ADBLUE"),
+            Heading(section_id=1, name="WHEEL ALIGNMENT"),
+            Heading(section_id=1, name="WINDOW TINT"),
+            Heading(section_id=1, name="DETAILING")
         ])
         db.session.commit()
         return "HEADING DONE"
     
     @app.route('/options')
-    def add_options():
+    def add_options():            
         db.session.add_all([
-            Option(heading_id=2, name="Naismith"),
-            Option(heading_id=2, name="Customer to pick-up"),
+            Option(heading_id=1, name="Naismith"),
+            Option(heading_id=1, name="Customer to pick-up"),
             
-            Option(heading_id=3, name="CMV"),
-            Option(heading_id=3, name="Bayswater / Hallam"),
-            Option(heading_id=3, name="Tatiara"),
+            Option(heading_id=2, name="CMV"),
+            Option(heading_id=2, name="Bayswater / Hallam"),
+            Option(heading_id=2, name="Tatiara"),
             
-            Option(heading_id=4, name="Re-rate engine to 600HP / 2050"),
+            Option(heading_id=3, name="Re-rate engine to 600HP / 2050"),
             
-            Option(heading_id=5, name="1.5 KG Fire Ext & Blower"),
-            Option(heading_id=5, name="Fit air blower only"),
-            Option(heading_id=5, name="Relocate fire ext and fit air blower"),
-            Option(heading_id=5, name="DAF Fire Ext & Blower"),
+            Option(heading_id=4, name="1.5 KG Fire Ext & Blower"),
+            Option(heading_id=4, name="Fit air blower only"),
+            Option(heading_id=4, name="Relocate fire ext and fit air blower"),
+            Option(heading_id=4, name="DAF Fire Ext & Blower"),
             
-            Option(heading_id=6, name="FRONT ONLY NUT COVERS 33MM (20) SCREW ON"),
-            Option(heading_id=6, name="NUT COVERS 33MM (60) SCREW ON"),
-            Option(heading_id=6, name="60 YELLOW NUT INDICATORS WITH MATCHING NUT COVERS"),
-            Option(heading_id=6, name="80 YELLOW NUT INDICATORS WITH MATCHING NUT COVERS"),
-            Option(heading_id=6, name="100 YELLOW NUT INDICATORS WITH MATCHING NUT COVERS"),
-            Option(heading_id=6, name="DAF CAP & NUT COVER KIT"),
+            Option(heading_id=5, name="FRONT ONLY NUT COVERS 33MM (20) SCREW ON"),
+            Option(heading_id=5, name="NUT COVERS 33MM (60) SCREW ON"),
+            Option(heading_id=5, name="60 YELLOW NUT INDICATORS WITH MATCHING NUT COVERS"),
+            Option(heading_id=5, name="80 YELLOW NUT INDICATORS WITH MATCHING NUT COVERS"),
+            Option(heading_id=5, name="100 YELLOW NUT INDICATORS WITH MATCHING NUT COVERS"),
+            Option(heading_id=5, name="DAF CAP & NUT COVER KIT"),
         ])
         db.session.commit()
         return "OPTIONS DONE"
@@ -226,7 +267,7 @@ def register_routes(app, db):
     @app.route('/option_attributes')
     def add_option_attributes():
         db.session.add_all([
-            OptionAttribute(option_id=8, name="Location")
+            OptionAttribute(option_id=7, name="Location")
         ])
         db.session.commit()
         return "OPTION ATTRIBUTES DONE"
@@ -234,11 +275,71 @@ def register_routes(app, db):
     @app.route('/option_attribute_values')
     def add_option_attribute_values():
         db.session.add_all([
-            OptionAttributeValue(attribute_id=3, value="Under Passenger Seat"),
-            OptionAttributeValue(attribute_id=3, value="In Front of Passenger Seat")
+            OptionAttributeValue(attribute_id=1, value="Under Passenger Seat"),
+            OptionAttributeValue(attribute_id=1, value="In Front of Passenger Seat")
         ])
         db.session.commit()
         return "OPTION ATTRIBUTE VALUES DONE"
+
+    @app.route('/customer')
+    def add_customer():
+        db.session.add_all([
+            Customer(name="Collins"),
+            Customer(name="APC"),
+            Customer(name="Ben's Company", email="benjamin.harvey@cmvtruckcentre.com.au", phone="0477504056", address="100 Port Wakefield Rd, Cavan, 5094"),
+        ])
+        db.session.commit()
+        return "CUSTOMERS DONE"
+
+    @app.route('/salesman')
+    def add_salesman():
+        salesman = Salesman.query.all()
+        for s in salesman:
+            db.session.delete(s)
+        db.session.add_all([
+            Salesman(first_name="Benjamin", last_name="Harvey", email="benjamin.harvey@cmvtruckcentre.com.au", phone="0477504056"),
+            Salesman(first_name="Justin", last_name="Faull", email="justin.faull@cmvtruckcentre.com.au"),
+            Salesman(first_name="Paul", last_name="Crisp", email="paul.crisp@cmvtruckcentre.com.au"),
+        ])
+        db.session.commit()
+        return "SALESMAN DONE"
+    
+    @app.route('/quote')
+    def add_quote():
+        quotes = Quote.query.all()
+        for quote in quotes:
+            db.session.delete(quote)
+        db.session.add_all([
+            Quote(customer_id=3, salesman_id=7)
+        ])
+        db.session.commit()
+        return "QUOTE DONE"
+    
+    @app.route('/quote_option_selection')
+    def add_quote_option_selection():
+        selected = QuoteOptionSelection.query.all()
+        for select in selected:
+            db.session.delete(select)
+        db.session.add_all([
+            QuoteOptionSelection(quote_id=2, option_id=1),
+            QuoteOptionSelection(quote_id=2, option_id=4),
+            QuoteOptionSelection(quote_id=2, option_id=6),
+            QuoteOptionSelection(quote_id=2, option_id=7, notes="This is a test note for fire ext")
+        ])
+        db.session.commit()
+        return "SELECTED OPTIONS DONE"
+    
+    @app.route('/quote_option_attribute_selection')
+    def add_quote_option_attribute_selection():
+        selected = QuoteOptionAttributeValue.query.all()
+        for select in selected:
+            db.session.delete(select)
+        db.session.add_all([
+            QuoteOptionAttributeValue(quote_option_id=8, attribute_id=1, value_id=1),
+
+        ])
+        db.session.commit()
+        return "SELECTED OPTIONS ATTRIBUTES DONE"
 
     @app.route('/add-test-data')
     def add_test_data():
