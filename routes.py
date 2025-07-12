@@ -100,10 +100,10 @@ def register_routes(app, db):
             data = response.json()
             temperature = round(data["main"]["temp"])
             description = data["weather"][0]["description"]
-            weather = f"{city} ({temperature}°C, {description})"
+            #weather = f"{city} ({temperature}°C, {description})"
         else:
             print("Error fetching weather:", response.status_code)
-        return render_template("home/home.html", weather=weather)
+        return render_template("home/home.html") #weather=weather)
     
     # -------- WORKSHEETS ---------------  
     @app.route('/quote/<int:quote_id>')
